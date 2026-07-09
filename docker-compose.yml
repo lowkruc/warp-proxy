@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   warp:
     image: ghcr.io/lowkruc/warp-proxy:latest
@@ -17,6 +15,7 @@ services:
       - "1080:1080"
     environment:
       - WARP_SLEEP=2
+      - WARP_ROTATION_INTERVAL=30
       # - WARP_LICENSE_KEY= # optional
     cap_add:
       # Docker already have them, these are for podman users

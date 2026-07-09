@@ -4,11 +4,13 @@
 
 **Optimized Docker image for Cloudflare WARP with SOCKS5 proxy**
 
+> Based on [cmj2002/warp-docker](https://github.com/cmj2002/warp-docker) — optimized & stripped for production
+
 [![CI](https://github.com/lowkruc/warp-proxy/actions/workflows/ci.yml/badge.svg)](https://github.com/lowkruc/warp-proxy/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/lowkruc/warp-proxy?color=blue&label=latest)](https://github.com/lowkruc/warp-proxy/releases/latest)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Flowkruc%2Fwarp--proxy-blue?logo=docker)](https://ghcr.io/lowkruc/warp-proxy)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-red.svg)](LICENSE)
-[![Image Size](https://img.shields.io/docker/image-size/lowkruc/warp-proxy/latest?label=image%20size)](https://github.com/lowkruc/warp-proxy/pkgs/container/warp-proxy)
+[![Image Size](https://img.shields.io/badge/image%20size-~241MB-blue)](https://github.com/lowkruc/warp-proxy/pkgs/container/warp-proxy)
 
 <br />
 

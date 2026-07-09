@@ -48,5 +48,20 @@ else
     warp-cli --accept-tos debug qlog enable
 fi
 
+# auto rotation: restart warp to get new IP
+if [ -n "$WARP_ROTATION_INTERVAL" ] && [ "$WARP_ROTATION_INTERVAL" -gt 0 ] 2>/dev/null; then
+    echo "[ROTATION] IP rotation enabled every $WARP_ROTATION_INTERVAL minutes"
+    (
+        while true; do
+            sleep "$((${WARP_ROTATION_INTERVAL} * 60))"
+            echo "[ROTATION] Rotating IP..."
+            warp-cli --accept-tos disconnect 2>/dev/null || true
+            sleep 2
+            warp-cli --accept-tos connect 2>/dev/null || true
+            echo "[ROTATION] IP rotated successfully"
+        done
+    ) &
+fi
+
 # start the proxy
 gost $GOST_ARGS

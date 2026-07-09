@@ -51,6 +51,7 @@ If output contains `warp=on` or `warp=plus`, it's working.
 | `WARP_LICENSE_KEY` | (empty) | WARP+ license key |
 | `REGISTER_WHEN_MDM_EXISTS` | (empty) | Force consumer reg even with mdm.xml |
 | `BETA_FIX_HOST_CONNECTIVITY` | (empty) | Auto-fix host→container routing |
+| `WARP_ROTATION_INTERVAL` | `0` | Auto-reconnect interval in minutes (0=disabled) |
 
 ### Image Tags
 

@@ -1,16 +1,52 @@
-# warp-proxy
+<div align="center">
 
-Run official [Cloudflare WARP](https://1.1.1.1/) client in Docker.
+# 🌐 warp-proxy
 
-> **Optimized image** — only 241MB (76% smaller than original).
+**Optimized Docker image for Cloudflare WARP with SOCKS5 proxy**
 
-## Usage
+[![CI](https://github.com/lowkruc/warp-docker/actions/workflows/ci.yml/badge.svg)](https://github.com/lowkruc/warp-docker/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/lowkruc/warp-docker?color=blue&label=latest)](https://github.com/lowkruc/warp-docker/releases/latest)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io%2Flowkruc%2Fwarp--proxy-blue?logo=docker)](https://ghcr.io/lowkruc/warp-proxy)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-red.svg)](LICENSE)
+[![Image Size](https://img.shields.io/docker/image-size/lowkruc/warp-proxy/latest?label=image%20size)](https://github.com/lowkruc/warp-docker/pkgs/container/warp-proxy)
 
-### Start the container
+<br />
+
+**Only 241MB** — 76% smaller than original WARP image
+
+[Quick Start](#-quick-start) · [Features](#-features) · [Configuration](#-configuration) · [Multiple Instances](#-multiple-instances) · [Build](#-build) · [Docs](#-documentation) · [Support](#-support)
+
+---
+
+</div>
+
+## 🚀 Quick Start
+
+```bash
+docker run -d \
+  --name warp \
+  --restart always \
+  --device /dev/net/tun \
+  --cap-add MKNOD \
+  --cap-add AUDIT_WRITE \
+  --cap-add NET_ADMIN \
+  -p 1080:1080 \
+  -e WARP_SLEEP=2 \
+  -v warp-data:/var/lib/cloudflare-warp \
+  ghcr.io/lowkruc/warp-proxy:latest
+```
+
+Verify:
+
+```bash
+curl --socks5-hostname localhost:1080 https://cloudflare.com/cdn-cgi/trace
+```
+
+Output should contain `warp=on` or `warp=plus`.
+
+### Docker Compose
 
 ```yaml
-version: "3"
-
 services:
   warp:
     image: ghcr.io/lowkruc/warp-proxy:latest
@@ -22,7 +58,6 @@ services:
       - "1080:1080"
     environment:
       - WARP_SLEEP=2
-      # - WARP_LICENSE_KEY= # optional
     cap_add:
       - MKNOD
       - AUDIT_WRITE
@@ -34,36 +69,96 @@ services:
       - ./data:/var/lib/cloudflare-warp
 ```
 
-Try it out:
+## ✨ Features
 
-```bash
-curl --socks5-hostname 127.0.0.1:1080 https://cloudflare.com/cdn-cgi/trace
-```
+| Feature | Description |
+|---------|-------------|
+| 🪶 **Optimized** | Only 241MB — stripped binaries, minimal deps |
+| 🔄 **Auto-Reconnect** | Configurable rotation interval for IP changes |
+| 🧦 **SOCKS5 Proxy** | GOST-powered proxy layer |
+| 🩺 **Health Check** | Built-in health endpoint |
+| 🏷️ **WARP+ Support** | License key support for WARP+ |
+| 🐳 **Multi-Arch** | Supports `linux/amd64` and `linux/arm64` |
+| 🔒 **Security** | Runs as non-root user, minimal attack surface |
+| ⚡ **Pure Binary** | No GUI deps — only warp-svc, warp-cli, warp-dex |
 
-If output contains `warp=on` or `warp=plus`, it's working.
-
-### Configuration
+## 📋 Configuration
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `WARP_SLEEP` | `2` | Seconds to wait for WARP daemon startup |
 | `GOST_ARGS` | `-L :1080` | GOST listen config |
 | `WARP_LICENSE_KEY` | (empty) | WARP+ license key |
-| `REGISTER_WHEN_MDM_EXISTS` | (empty) | Force consumer reg even with mdm.xml |
+| `WARP_ROTATION_INTERVAL` | `0` | Auto-reconnect interval in minutes (`0`=disabled) |
+| `REGISTER_WHEN_MDM_EXISTS` | (empty) | Force consumer registration even with mdm.xml |
 | `BETA_FIX_HOST_CONNECTIVITY` | (empty) | Auto-fix host→container routing |
-| `WARP_ROTATION_INTERVAL` | `0` | Auto-reconnect interval in minutes (0=disabled) |
 
-### Image Tags
+### WARP Rotation
+
+```yaml
+environment:
+  - WARP_ROTATION_INTERVAL=60  # Rotate IP every 60 minutes
+```
+
+This periodically reconnects WARP to get a new IP — useful for bypassing rate limits.
+
+## 🏗️ Architecture
+
+```
+Host ──SOCKS5:1080──▸ [Container]
+                        ├─ GOST (proxy layer)
+                        │    └─▸ warp-svc (WARP daemon)
+                        │           └─▸ Cloudflare (WireGuard/MASQUE)
+                        └─ /dev/net/tun
+```
+
+**Optimizations applied:**
+- Multi-stage Docker build (GOST + keyring)
+- Extract cloudflare-warp .deb directly (skip GUI deps)
+- Strip debug symbols from binaries (~15MB saved)
+- Remove udev, e2fsprogs, locale, terminfo
+- debian:bookworm-slim base
+
+## 🔄 Multiple Instances
+
+Run multiple WARP containers for IP rotation:
+
+```bash
+# Start 3 instances
+for i in 1 2 3; do
+  docker run -d \
+    --name warp-$i \
+    --restart always \
+    --device /dev/net/tun \
+    --cap-add MKNOD --cap-add AUDIT_WRITE --cap-add NET_ADMIN \
+    -p $((1080+i)):1080 \
+    -v warp-$i:/var/lib/cloudflare-warp \
+    ghcr.io/lowkruc/warp-proxy:latest
+done
+```
+
+> See [Multiple Containers Guide](docs/multiple-containers.md) for full details.
+
+## 🔀 With Warp Proxy Manager
+
+For automatic scaling and load balancing:
+
+```bash
+cd ../warp-proxy-manager
+docker compose up -d
+```
+
+The manager will auto-create and manage multiple warp-proxy containers.
+
+## 🏷️ Image Tags
 
 | Tag | Description |
 |-----|-------------|
-| `latest` | Latest build |
+| `latest` | Latest stable build |
 | `{WARP_VERSION}-{GOST_VERSION}` | Specific versions |
-| `{WARP_VERSION}-{GOST_VERSION}-{COMMIT_SHA}` | Specific commit |
+| `{WARP_VERSION}-{GOST_VERSION}-{SHA}` | Specific commit |
 
-Image: `ghcr.io/lowkruc/warp-proxy`
-
-## Build
+## 🛠️ Build
 
 ```bash
 docker build \
@@ -80,36 +175,40 @@ Or use GitHub Actions — push to `master` or trigger manually.
 2. Enable GitHub Packages in repo settings
 3. Done — uses `GITHUB_TOKEN` automatically
 
-## How It Works
+## 📚 Documentation
 
-```
-Host ──SOCKS5:1080──▸ [Container]
-                        ├─ GOST (proxy layer) ──▸ warp-svc (WARP daemon) ──▸ Cloudflare
-                        └─ /dev/net/tun (WireGuard/MASQUE tunnel)
-```
+| Document | Description |
+|----------|-------------|
+| [Complete Guide](docs/README.md) | Full documentation |
+| [Multiple Containers](docs/multiple-containers.md) | Running multiple WARP instances |
+| [Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
+| [Protocols](docs/protocols.md) | MASQUE vs WireGuard |
+| [Networking](docs/networking.md) | Host connectivity & network config |
 
-**Optimizations applied:**
-- Multi-stage build (GOST + keyring)
-- Extract cloudflare-warp .deb directly (skip GUI deps)
-- Strip debug symbols from binaries
-- Remove udev, e2fsprogs, locale, terminfo
-- debian:bookworm-slim base
+## 🤝 Contributing
 
-## Documentation
+Contributions welcome! See [CONTRIBUTING.md](../warp-proxy-manager/CONTRIBUTING.md).
 
-- [Complete Guide](docs/README.md) - Full documentation
-- [Multiple Containers](docs/multiple-containers.md) - Running multiple WARP instances
-- [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
-- [Protocols](docs/protocols.md) - MASQUE vs WireGuard
-- [Networking](docs/networking.md) - Host connectivity and network configuration
-
-## Quick Links
-
-- [Running Multiple Containers](docs/multiple-containers.md)
-- [Troubleshooting Guide](docs/troubleshooting.md)
-- [Host Connectivity Issues](docs/networking.md#1-host-cannot-reach-container)
-- [Protocol Selection](docs/protocols.md)
-
-## License
+## 📜 License
 
 [GPL-3.0](LICENSE)
+
+---
+
+<div align="center">
+
+## 💖 Support
+
+If you find this project useful, consider supporting its development:
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/lowkruc)
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-ea4aaa?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/lowkruc)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/lowkruc)
+
+<br />
+
+**Made with ❤️ by [lowkruc](https://github.com/lowkruc)**
+
+[⬆ Back to top](#-warp-proxy)
+
+</div>

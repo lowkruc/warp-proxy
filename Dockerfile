@@ -78,7 +78,7 @@ RUN chmod +x /entrypoint.sh /healthcheck/index.sh && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
       curl ca-certificates sudo dbus \
-      libnftables1 libnftnl11 libmnl0 \
+      libnftables1 libnftnl11 libmnl0 nftables \
       libpcsclite1 libcap2-bin \
       libglib2.0-0 libdbus-1-3 libsystemd0 \
       libssl3 libnss3 libnspr4 \

@@ -3,11 +3,7 @@
 # exit when any command fails
 set -e
 
-interfaces=$(ip --json address | jq -r '
-    .[] | 
-    select(.ifname != "lo") | 
-    .ifname
-    ')
+interfaces=$(ip -o link show | awk -F': ' '{print $2}' | grep -v lo)
 
 # if CloudflareWARP not started, abort
 if [[ ! "$interfaces" =~ "CloudflareWARP" ]]; then
@@ -16,19 +12,16 @@ if [[ ! "$interfaces" =~ "CloudflareWARP" ]]; then
 fi
 
 # get excluded networks
-networks=$(ip --json address | jq -r '
-  .[] | 
-  select((.ifname != "lo") and (.ifname != "CloudflareWARP")) | 
-  .addr_info[] | 
-  select(.family == "inet") | 
-  "\(.local)/\(.prefixlen)"' | 
-  xargs -I {} sh -c '
-    if echo {} | grep -q "/32$"; then 
-      echo {};
-    else 
-      ipcalc -n {} | grep Network | awk "{print \$2}";
-    fi
-  ')
+networks=$(ip -4 -o addr show | awk '{for(i=1;i<=NF;i++) if($i ~ /^inet$/) print $(i+1)}' | grep -v '\.lo$' | grep -v 'CloudflareWARP' | while read cidr; do
+  addr=${cidr%%/*}
+  prefix=${cidr##*/}
+  # convert prefix to mask and calculate network
+  mask=$((0xFFFFFFFF << (32 - prefix) & 0xFFFFFFFF))
+  IFS='.' read -r a b c d <<< "$addr"
+  ip_num=$(( (a << 24) + (b << 16) + (c << 8) + d ))
+  net_num=$((ip_num & mask))
+  printf '%d.%d.%d.%d/%s\n' $(( (net_num >> 24) & 0xFF )) $(( (net_num >> 16) & 0xFF )) $(( (net_num >> 8) & 0xFF )) $((net_num & 0xFF)) "$prefix"
+done)
 
 # if no networks found, abort
 if [ -z "$networks" ]; then

@@ -95,6 +95,21 @@ Host ──SOCKS5:1080──▸ [Container]
 - Remove udev, e2fsprogs, locale, terminfo
 - debian:bookworm-slim base
 
+## Documentation
+
+- [Complete Guide](docs/README.md) - Full documentation
+- [Multiple Containers](docs/multiple-containers.md) - Running multiple WARP instances
+- [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
+- [Protocols](docs/protocols.md) - MASQUE vs WireGuard
+- [Networking](docs/networking.md) - Host connectivity and network configuration
+
+## Quick Links
+
+- [Running Multiple Containers](docs/multiple-containers.md)
+- [Troubleshooting Guide](docs/troubleshooting.md)
+- [Host Connectivity Issues](docs/networking.md#1-host-cannot-reach-container)
+- [Protocol Selection](docs/protocols.md)
+
 ## License
 
 [GPL-3.0](LICENSE)
